@@ -4,7 +4,7 @@ Tags: paystack, woocommerce, order tracking, payment verification
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,6 +71,12 @@ Yes. Both logged-in and guest customers can verify payments.
 The order status is changed to **Processing** and the WooCommerce order notification email is resent.
 
 == Changelog ==
+
+= 1.0.4 =
+* Test release for GitHub update detection
+
+= 1.0.3 =
+* Small fixes
 
 = 1.0.2 =
 * Added full WordPress multisite support
