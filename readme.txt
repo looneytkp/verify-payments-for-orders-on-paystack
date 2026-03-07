@@ -4,7 +4,7 @@ Tags: paystack, woocommerce, order tracking, payment verification
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 1.0.4
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,18 +72,13 @@ The order status is changed to **Processing** and the WooCommerce order notifica
 
 == Changelog ==
 
-= 1.0.4 =
-* Test release for GitHub update detection
-
-= 1.0.3 =
-* Small fixes
-
-= 1.0.2 =
-* Added full WordPress multisite support
-* Automatic creation of Track Orders page across subsites
-* Improved GitHub update integration
-* Refactored plugin structure into modular files
-* Added improved frontend UI and badges
-
-= 1.0.1 =
-* Initial release
+= 1.1.2 =
+* Added GitHub updater branch support for reliable update detection.
+* Fixed Paystack tracking form JavaScript handling.
+* Added nonce protection to tracking verification endpoint.
+* Added rate limiting to tracking requests to prevent abuse.
+* Improved WooCommerce admin order action compatibility.
+* Optimized frontend assets to only load when required.
+* Fixed potential frontend form resubmission loop.
+* Improved diagnostics and logging reliability.
+* General stability improvements and internal cleanup.

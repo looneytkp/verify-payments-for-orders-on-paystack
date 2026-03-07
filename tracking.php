@@ -11,13 +11,13 @@ Generic version for sites using: /track-orders/
 
 add_action('woocommerce_order_tracking_form', function () {
 
-  if ( ! is_page('track-orders') ) return;
+  if ( ! function_exists('baby_vp_is_current_track_orders_page') || ! baby_vp_is_current_track_orders_page() ) return;
 
-  echo '<div class="baby-ps-track" style="margin-top:18px; padding-top:14px; border-top:1px solid #e5e7eb;">';
+  echo '<div class="baby-ps-track" data-baby-ps-track="1">';
 
-  echo '<p style="margin:0 0 10px; font-weight:600;">Track order using Paystack reference</p>';
+  echo '<p class="baby-ps-track-title">Track order using Paystack reference</p>';
 
-  echo '<p style="margin:0 0 12px; color:#6b7280;">
+  echo '<p class="baby-ps-track-text">
           If you paid and didn’t receive your order email, enter your Paystack reference and billing email. Paystack reference will be in the payment confirmation received from Paystack after making payment.
         </p>';
 
@@ -34,7 +34,7 @@ add_action('woocommerce_order_tracking_form', function () {
   echo '<div class="clear"></div>';
 
   // no second button — reuse the default Woo "Track" button
-  echo '<div class="baby-ps-track-error" style="margin-top:10px;color:#991b1b;"></div>';
+  echo '<div class="baby-ps-track-error"></div>';
 
   echo '</div>';
 
@@ -54,8 +54,20 @@ function baby_track_by_paystack(){
 
   $ref   = isset($_POST['reference']) ? sanitize_text_field(wp_unslash($_POST['reference'])) : '';
   $email = isset($_POST['email']) ? sanitize_email(wp_unslash($_POST['email'])) : '';
+  $nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';
+
+  if ( ! wp_verify_nonce( $nonce, 'baby_track_by_paystack' ) ) {
+    baby_vp_log( 'track', 'Tracking failed: nonce check failed.', [] );
+    wp_send_json_error(['message' => 'Security failed. Please refresh and try again.']);
+  }
+
+  if ( function_exists( 'baby_vp_rate_limit_check' ) && ! baby_vp_rate_limit_check('track') ) {
+    baby_vp_log( 'track', 'Tracking blocked by rate limit.', [] );
+    wp_send_json_error(['message' => 'Too many tracking attempts. Please wait a few minutes before trying again.']);
+  }
 
   if(!$ref || !$email){
+    baby_vp_log( 'track', 'Tracking failed: missing reference or billing email.', [] );
     wp_send_json_error(['message' => 'Enter Paystack reference and billing email.']);
   }
 
@@ -63,11 +75,13 @@ function baby_track_by_paystack(){
   $order_id = isset($parts[0]) ? absint($parts[0]) : 0;
 
   if(!$order_id){
+    baby_vp_log( 'track', 'Tracking failed: invalid reference format.', [ 'reference' => $ref ] );
     wp_send_json_error(['message' => 'Invalid Paystack reference format. Example: 24168_1772173890']);
   }
 
   $order = wc_get_order($order_id);
   if(!$order){
+    baby_vp_log( 'track', 'Tracking failed: order not found for reference.', [ 'order_id' => $order_id ] );
     wp_send_json_error(['message' => 'Order not found for that reference.']);
   }
 
@@ -75,8 +89,11 @@ function baby_track_by_paystack(){
   $email       = strtolower(trim($email));
 
   if(!$order_email || $order_email !== $email){
+    baby_vp_log( 'track', 'Tracking failed: billing email mismatch.', [ 'order_id' => $order_id ] );
     wp_send_json_error(['message' => 'Billing email does not match this order.']);
   }
+
+  baby_vp_log( 'track', 'Tracking match found by Paystack reference helper.', [ 'order_id' => $order_id ] );
 
   wp_send_json_success([
     'orderid' => (string) $order->get_order_number(),

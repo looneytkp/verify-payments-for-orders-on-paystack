@@ -1,0 +1,100 @@
+.baby-vp-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:600;
+  border:1px solid transparent;
+  margin-left:12px;
+  margin-top:10px;
+}
+.baby-vp-badge.is-info{
+  background:#f3f4f6;
+  border-color:#e5e7eb;
+  color:#111827;
+}
+.baby-vp-badge.is-success{
+  background:#ecfdf5;
+  border-color:#a7f3d0;
+  color:#065f46;
+}
+.baby-vp-badge.is-error{
+  background:#fef2f2;
+  border-color:#fecaca;
+  color:#991b1b;
+}
+.baby-vp-badge .dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:currentColor;
+}
+.button.baby_verify_payment.is-loading{
+  pointer-events:none;
+  opacity:.7;
+}
+
+.woocommerce .woocommerce-order-tracking,
+.woocommerce .woocommerce-order-tracking p,
+.woocommerce .woocommerce-order-tracking label,
+.woocommerce .woocommerce-order-tracking .woocommerce-info {
+  color:#000 !important;
+}
+
+@media (max-width: 767px){
+  .baby-vp-badge{
+    margin-left:0;
+    margin-right:0;
+  }
+
+  .woocommerce a.button,
+  .woocommerce button.button,
+  .woocommerce input.button,
+  .woocommerce .button.baby_verify_payment{
+    margin-bottom:10px;
+  }
+}
+
+.baby-vp-badge-row,
+.baby-vp-action-row{
+  margin-top:12px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.baby-vp-action-row{
+  align-items:center;
+}
+
+.baby-vp-track-another,
+.woocommerce .button.baby-vp-verify-button{
+  margin-bottom:10px;
+}
+
+.baby-vp-track-another{
+  margin-right:8px;
+}
+
+.baby-ps-track{
+  margin-top:18px;
+  padding-top:14px;
+  border-top:1px solid #e5e7eb;
+}
+
+.baby-ps-track-title{
+  margin:0 0 10px;
+  font-weight:600;
+}
+
+.baby-ps-track-text{
+  margin:0 0 12px;
+  color:#6b7280;
+}
+
+.baby-ps-track-error{
+  margin-top:10px;
+  color:#991b1b;
+}

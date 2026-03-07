@@ -2,7 +2,7 @@
 /*
 Plugin Name: Verify Payments for Orders on Paystack
 Description: Track WooCommerce orders using Paystack reference and verify payments for cancelled or pending Paystack orders.
-Version: 1.0.4
+Version: 1.1.2
 Author: Swiftstack Innovations
 Text Domain: verify-payments-for-orders-on-paystack
 */
@@ -11,69 +11,35 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-register_activation_hook(__FILE__, 'baby_vp_on_activate');
+define( 'BABY_VP_VERSION', '1.1.2' );
+define( 'BABY_VP_FILE', __FILE__ );
+define( 'BABY_VP_PATH', plugin_dir_path( __FILE__ ) );
+define( 'BABY_VP_URL', plugin_dir_url( __FILE__ ) );
+define( 'BABY_VP_OPTION_SETUP_DONE', 'baby_vp_setup_done' );
+define( 'BABY_VP_OPTION_CREATED_PAGE_ID', 'baby_vp_created_page_id' );
+define( 'BABY_VP_OPTION_PAGE_OWNED', 'baby_vp_page_owned' );
+define( 'BABY_VP_OPTION_CREATED_MENU_ITEMS', 'baby_vp_created_menu_items' );
+define( 'BABY_VP_OPTION_LAST_HEALTHCHECK', 'baby_vp_last_healthcheck' );
 
-function baby_vp_on_activate($network_wide) {
+define( 'BABY_VP_LOG_SOURCE', 'verify-payments-paystack' );
 
-    if (is_multisite() && $network_wide) {
-        $site_ids = get_sites(['fields' => 'ids']);
+require_once BABY_VP_PATH . 'includes/setup.php';
+require_once BABY_VP_PATH . 'includes/menus.php';
+require_once BABY_VP_PATH . 'includes/admin-page.php';
+require_once BABY_VP_PATH . 'includes/settings.php';
+require_once BABY_VP_PATH . 'includes/logger.php';
+require_once BABY_VP_PATH . 'includes/diagnostics.php';
+require_once BABY_VP_PATH . 'includes/shortcode.php';
+require_once BABY_VP_PATH . 'paystack.php';
+require_once BABY_VP_PATH . 'verify-payment.php';
+require_once BABY_VP_PATH . 'tracking.php';
+require_once BABY_VP_PATH . 'frontend.php';
 
-        foreach ($site_ids as $site_id) {
-            switch_to_blog($site_id);
-            baby_vp_create_track_orders_page_on_activation();
-            restore_current_blog();
-        }
-
-        return;
-    }
-
-    baby_vp_create_track_orders_page_on_activation();
-}
-
-function baby_vp_create_track_orders_page_on_activation() {
-    $slug = 'track-orders';
-
-    $existing = get_page_by_path($slug);
-    if ($existing) {
-        return;
-    }
-
-    wp_insert_post([
-        'post_title'   => 'Track Orders',
-        'post_name'    => $slug,
-        'post_content' => '<div style="margin-top:40px;"></div>[woocommerce_order_tracking]',
-        'post_status'  => 'publish',
-        'post_type'    => 'page',
-    ]);
-}
-
-if ( ! function_exists('is_plugin_active_for_network') ) {
-    require_once ABSPATH . 'wp-admin/includes/plugin.php';
-}
-
-/*
-Create the tracking page automatically for new subsites too
-*/
-add_action('wp_initialize_site', 'baby_vp_on_new_site', 10, 2);
-
-function baby_vp_on_new_site($new_site, $args) {
-    if ( ! is_plugin_active_for_network(plugin_basename(__FILE__)) ) {
-        return;
-    }
-
-    switch_to_blog($new_site->blog_id);
-    baby_vp_create_track_orders_page_on_activation();
-    restore_current_blog();
-}
-
-function baby_vp_admin_email() {
-    return 'verifypaystack@lollarodenterprise.com';
-}
-
-require_once plugin_dir_path(__FILE__) . 'paystack.php';
-require_once plugin_dir_path(__FILE__) . 'verify-payment.php';
-require_once plugin_dir_path(__FILE__) . 'tracking.php';
-require_once plugin_dir_path(__FILE__) . 'frontend.php';
+baby_vp_register_hooks();
+baby_vp_register_admin_page_hooks();
+baby_vp_register_settings_hooks();
+baby_vp_register_diagnostics_hooks();
+baby_vp_register_shortcode_hooks();
 
 require_once __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
 
@@ -83,4 +49,5 @@ $updateChecker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateCheck
     'verify-payments-for-orders-on-paystack'
 );
 
+$updateChecker->setBranch('main');
 $updateChecker->getVcsApi()->enableReleaseAssets();
