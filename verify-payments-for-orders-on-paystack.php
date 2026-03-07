@@ -83,4 +83,4 @@ $updateChecker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateCheck
     'verify-payments-for-orders-on-paystack'
 );
 
-$updateChecker->setBranch('main');
+$updateChecker->getVcsApi()->enableReleaseAssets();
