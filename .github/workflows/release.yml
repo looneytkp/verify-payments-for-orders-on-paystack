@@ -1,0 +1,35 @@
+name: Build and Release Plugin
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Create clean plugin zip
+        run: |
+          mkdir -p build
+          zip -r build/verify-payments-for-orders-on-paystack.zip \
+            verify-payments-for-orders-on-paystack.php \
+            paystack.php \
+            verify-payment.php \
+            tracking.php \
+            frontend.php \
+            readme.txt \
+            plugin-update-checker
+
+      - name: Create GitHub release and upload zip
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/verify-payments-for-orders-on-paystack.zip
+          generate_release_notes: true
