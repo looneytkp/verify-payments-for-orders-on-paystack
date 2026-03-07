@@ -77,9 +77,7 @@ require_once plugin_dir_path(__FILE__) . 'frontend.php';
 
 require_once __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
 
-use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
-
-$updateChecker = PucFactory::buildUpdateChecker(
+$updateChecker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
     'https://github.com/looneytkp/verify-payments-for-orders-on-paystack/',
     __FILE__,
     'verify-payments-for-orders-on-paystack'
