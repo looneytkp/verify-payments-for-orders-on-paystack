@@ -19,14 +19,12 @@ jobs:
       - name: Create clean plugin zip
         run: |
           mkdir -p build
-          zip -r build/verify-payments-for-orders-on-paystack.zip \
-            verify-payments-for-orders-on-paystack.php \
-            paystack.php \
-            verify-payment.php \
-            tracking.php \
-            frontend.php \
-            readme.txt \
-            plugin-update-checker
+          zip -r build/verify-payments-for-orders-on-paystack.zip . \
+            -x "*.git*" \
+            -x ".github/*" \
+            -x "build/*" \
+            -x "__MACOSX/*" \
+            -x "*.DS_Store"
 
       - name: Create GitHub release and upload zip
         uses: softprops/action-gh-release@v2
