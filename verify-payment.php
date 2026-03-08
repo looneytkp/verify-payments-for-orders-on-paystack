@@ -11,6 +11,10 @@ SEND EMAIL WHEN PAYMENT VERIFIED
 function baby_send_verify_admin_email( WC_Order $order, array $payment = [] ) {
 
     $to = baby_vp_admin_email();
+    if ( empty( $to ) ) {
+        return;
+    }
+
     $subject = 'Paystack Verified: Order #' . $order->get_order_number();
 
     $order_id   = $order->get_id();

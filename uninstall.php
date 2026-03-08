@@ -31,6 +31,11 @@ $delete_for_blog = function() {
     delete_option( 'baby_vp_created_menu_items' );
     delete_option( 'baby_vp_page_owned' );
     delete_option( 'baby_vp_last_healthcheck' );
+
+    delete_option( 'baby_vp_admin_email' );
+    delete_option( 'baby_vp_auto_create_menu' );
+    delete_option( 'baby_vp_menu_locations' );
+    delete_transient( 'baby_vp_setup_complete' );
 };
 
 if ( is_multisite() ) {

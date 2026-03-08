@@ -6,22 +6,38 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 function baby_vp_get_default_admin_email() {
     $defaults = function_exists( 'baby_vp_get_settings_defaults' ) ? baby_vp_get_settings_defaults() : [];
-    return isset( $defaults['admin_email'] ) ? $defaults['admin_email'] : 'verifypaystack@lollarodenterprise.com';
+    return isset( $defaults['admin_email'] ) ? $defaults['admin_email'] : '';
 }
 
 function baby_vp_admin_email() {
     $email = function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'admin_email', baby_vp_get_default_admin_email() ) : baby_vp_get_default_admin_email();
     $email = sanitize_email( $email );
 
-    return ! empty( $email ) ? $email : baby_vp_get_default_admin_email();
+    return is_email( $email ) ? $email : '';
 }
 
 function baby_vp_auto_create_page_enabled() {
     return (bool) ( function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'auto_create_page', 1 ) : 1 );
 }
 
+function baby_vp_menu_integration_enabled() {
+    return (bool) ( function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'menu_integration_enabled', 0 ) : 0 );
+}
+
+function baby_vp_add_to_primary_menu_enabled() {
+    return (bool) ( function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'add_to_primary_menu', 0 ) : 0 );
+}
+
+function baby_vp_add_to_mobile_menu_enabled() {
+    return (bool) ( function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'add_to_mobile_menu', 0 ) : 0 );
+}
+
+function baby_vp_add_to_footer_menus_enabled() {
+    return (bool) ( function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'add_to_footer_menus', 0 ) : 0 );
+}
+
 function baby_vp_auto_create_menu_enabled() {
-    return (bool) ( function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'auto_create_menu', 1 ) : 1 );
+    return baby_vp_menu_integration_enabled();
 }
 
 function baby_vp_get_menu_label() {
@@ -162,7 +178,7 @@ function baby_vp_maybe_run_setup() {
 function baby_vp_run_setup() {
     $page_id = baby_vp_get_or_create_track_orders_page();
 
-    if ( baby_vp_auto_create_menu_enabled() && $page_id ) {
+    if ( baby_vp_menu_integration_enabled() && $page_id ) {
         baby_vp_maybe_add_fix_order_issues_menu_item( $page_id );
     }
 
@@ -289,8 +305,25 @@ function baby_vp_maybe_self_repair() {
     }
 
     if ( ! $needs_repair && baby_vp_auto_create_menu_enabled() ) {
-        foreach ( baby_vp_get_created_menu_items() as $menu_id => $item_id ) {
-            if ( ! wp_get_nav_menu_item( (int) $item_id ) ) {
+        $created_menu_items = baby_vp_get_created_menu_items();
+        $page_url           = $page_id ? get_permalink( $page_id ) : '';
+
+        foreach ( $created_menu_items as $menu_id => $item_id ) {
+            $menu_id = (int) $menu_id;
+            $item_id = (int) $item_id;
+
+            if ( ! $menu_id || ! $item_id ) {
+                continue;
+            }
+
+            $menu_item = wp_get_nav_menu_item( $item_id );
+            if ( ! $menu_item ) {
+                $needs_repair = true;
+                break;
+            }
+
+            $items = wp_get_nav_menu_items( $menu_id );
+            if ( ! is_array( $items ) || ! baby_vp_menu_already_has_fix_link( $items, $page_id, $page_url, $menu_id, $created_menu_items ) ) {
                 $needs_repair = true;
                 break;
             }

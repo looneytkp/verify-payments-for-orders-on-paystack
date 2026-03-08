@@ -4,7 +4,7 @@ Tags: paystack, woocommerce, order tracking, payment verification
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,7 +22,7 @@ Key features include:
 * Allow order tracking using **Paystack reference + billing email**
 * Automatically update verified orders to **Processing**
 * Automatically resend WooCommerce order confirmation email after verification
-* Send an admin notification when a payment is successfully verified
+* Send an optional admin notification when a payment is successfully verified
 * Supports **WordPress multisite networks**
 * Automatically creates a **Track Orders page** during plugin activation
 * Compatible with WooCommerce Paystack gateway settings
@@ -38,6 +38,7 @@ Key features include:
 3. If using **WordPress Multisite**, network activate the plugin.
 
 4. A **Track Orders** page will automatically be created containing the WooCommerce tracking shortcode.
+5. Menu integration is disabled by default and can be enabled from the plugin settings page.
 
 == Usage ==
 
@@ -71,6 +72,18 @@ Yes. Both logged-in and guest customers can verify payments.
 The order status is changed to **Processing** and the WooCommerce order notification email is resent.
 
 == Changelog ==
+
+= 1.1.3 =
+* Added safer menu checks before creating any Fix Order Issues menu item.
+* Plugin now confirms the target page already exists in the assigned menu before adding it.
+* Added a duplicate-menu guard so the same assigned menu is only processed once even when reused across multiple theme locations.
+* Removed risky menu reordering during automatic menu insertion to avoid damaging existing menu structure.
+* Added a Settings link on the Plugins page for quicker access.
+* Menu integration is now disabled by default on fresh installs and updates until enabled in settings.
+* Added separate menu integration toggles for Primary, Mobile, and Footer menus.
+* Existing menu items are detected by linked page/object to avoid duplicates even if the title changes.
+* Admin notification email is now blank by default and only used after being set in settings.
+* Added uninstall cleanup for plugin settings, tracked plugin-created menu items, tracked healthcheck data, and the plugin-owned Track Orders page.
 
 = 1.1.2 =
 * Added GitHub updater branch support for reliable update detection.

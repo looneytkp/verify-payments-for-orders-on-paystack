@@ -31,13 +31,16 @@ function baby_vp_register_settings() {
     );
 
     $fields = [
-        'admin_email'      => 'Admin notification email',
-        'auto_create_page' => 'Auto-create tracking page',
-        'auto_create_menu' => 'Auto-create menu item',
-        'menu_label'       => 'Menu label',
-        'page_title'       => 'Page title',
-        'page_slug'        => 'Page slug',
-        'enable_self_repair' => 'Enable self-repair',
+        'admin_email'              => 'Admin notification email',
+        'auto_create_page'         => 'Auto-create tracking page',
+        'menu_integration_enabled' => 'Enable menu integration',
+        'add_to_primary_menu'      => 'Add to Primary menu',
+        'add_to_mobile_menu'       => 'Add to Mobile menu',
+        'add_to_footer_menus'      => 'Add to Footer menus',
+        'menu_label'               => 'Menu label',
+        'page_title'               => 'Page title',
+        'page_slug'                => 'Page slug',
+        'enable_self_repair'       => 'Enable self-repair',
     ];
 
     foreach ( $fields as $key => $label ) {
@@ -54,13 +57,16 @@ function baby_vp_register_settings() {
 
 function baby_vp_get_settings_defaults() {
     return [
-        'admin_email'      => 'verifypaystack@lollarodenterprise.com',
-        'auto_create_page' => 1,
-        'auto_create_menu' => 1,
-        'menu_label'       => 'Fix Order Issues',
-        'page_title'       => 'Track Orders',
-        'page_slug'        => 'track-orders',
-        'enable_self_repair' => 1,
+        'admin_email'              => '',
+        'auto_create_page'         => 1,
+        'menu_integration_enabled' => 0,
+        'add_to_primary_menu'      => 0,
+        'add_to_mobile_menu'       => 0,
+        'add_to_footer_menus'      => 0,
+        'menu_label'               => 'Fix Order Issues',
+        'page_title'               => 'Track Orders',
+        'page_slug'                => 'track-orders',
+        'enable_self_repair'       => 1,
     ];
 }
 
@@ -87,12 +93,15 @@ function baby_vp_sanitize_settings( $input ) {
     $input = is_array( $input ) ? $input : [];
 
     $output['admin_email'] = isset( $input['admin_email'] ) ? sanitize_email( $input['admin_email'] ) : $defaults['admin_email'];
-    if ( empty( $output['admin_email'] ) ) {
-        $output['admin_email'] = $defaults['admin_email'];
+    if ( ! is_email( $output['admin_email'] ) ) {
+        $output['admin_email'] = '';
     }
 
-    $output['auto_create_page'] = ! empty( $input['auto_create_page'] ) ? 1 : 0;
-    $output['auto_create_menu'] = ! empty( $input['auto_create_menu'] ) ? 1 : 0;
+    $output['auto_create_page']         = ! empty( $input['auto_create_page'] ) ? 1 : 0;
+    $output['menu_integration_enabled'] = ! empty( $input['menu_integration_enabled'] ) ? 1 : 0;
+    $output['add_to_primary_menu']      = ! empty( $input['add_to_primary_menu'] ) ? 1 : 0;
+    $output['add_to_mobile_menu']       = ! empty( $input['add_to_mobile_menu'] ) ? 1 : 0;
+    $output['add_to_footer_menus']      = ! empty( $input['add_to_footer_menus'] ) ? 1 : 0;
 
     $output['menu_label'] = isset( $input['menu_label'] ) ? sanitize_text_field( $input['menu_label'] ) : $defaults['menu_label'];
     if ( $output['menu_label'] === '' ) {
@@ -120,14 +129,33 @@ function baby_vp_render_settings_field( $args ) {
     $value    = isset( $settings[ $key ] ) ? $settings[ $key ] : '';
     $name     = 'baby_vp_settings[' . $key . ']';
 
-    if ( in_array( $key, [ 'auto_create_page', 'auto_create_menu', 'enable_self_repair' ], true ) ) {
+    $checkboxes = [
+        'auto_create_page',
+        'menu_integration_enabled',
+        'add_to_primary_menu',
+        'add_to_mobile_menu',
+        'add_to_footer_menus',
+        'enable_self_repair',
+    ];
+
+    if ( in_array( $key, $checkboxes, true ) ) {
         echo '<label><input type="checkbox" name="' . esc_attr( $name ) . '" value="1" ' . checked( ! empty( $value ), true, false ) . '> Enable</label>';
+
+        if ( 'menu_integration_enabled' === $key ) {
+            echo '<p class="description">Disabled by default. Fresh installs and plugin updates will not edit menus unless you enable this.</p>';
+        } elseif ( 'add_to_footer_menus' === $key ) {
+            echo '<p class="description">Adds the page to all assigned footer-like menu locations when menu integration is enabled.</p>';
+        }
+
         return;
     }
 
     $type = $key === 'admin_email' ? 'email' : 'text';
-    $class = in_array( $key, [ 'menu_label', 'page_title', 'page_slug' ], true ) ? 'regular-text' : 'regular-text';
-    echo '<input type="' . esc_attr( $type ) . '" class="' . esc_attr( $class ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( (string) $value ) . '">';
+    echo '<input type="' . esc_attr( $type ) . '" class="regular-text" name="' . esc_attr( $name ) . '" value="' . esc_attr( (string) $value ) . '">';
+
+    if ( 'admin_email' === $key ) {
+        echo '<p class="description">Leave blank to disable admin notification emails.</p>';
+    }
 }
 
 function baby_vp_render_settings_page() {

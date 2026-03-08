@@ -2,7 +2,7 @@
 /*
 Plugin Name: Verify Payments for Orders on Paystack
 Description: Track WooCommerce orders using Paystack reference and verify payments for cancelled or pending Paystack orders.
-Version: 1.1.2
+Version: 1.1.3
 Author: Swiftstack Innovations
 Text Domain: verify-payments-for-orders-on-paystack
 */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'BABY_VP_VERSION', '1.1.2' );
+define( 'BABY_VP_VERSION', '1.1.3' );
 define( 'BABY_VP_FILE', __FILE__ );
 define( 'BABY_VP_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BABY_VP_URL', plugin_dir_url( __FILE__ ) );
@@ -41,6 +41,15 @@ baby_vp_register_settings_hooks();
 baby_vp_register_diagnostics_hooks();
 baby_vp_register_shortcode_hooks();
 
+add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'baby_vp_plugin_action_links' );
+
+function baby_vp_plugin_action_links( $links ) {
+    $settings_link = '<a href="' . esc_url( admin_url( 'admin.php?page=baby-vp-settings' ) ) . '">Settings</a>';;
+    array_unshift( $links, $settings_link );
+
+    return $links;
+}
+
 require_once __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
 
 $updateChecker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
@@ -49,5 +58,4 @@ $updateChecker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateCheck
     'verify-payments-for-orders-on-paystack'
 );
 
-$updateChecker->setBranch('main');
 $updateChecker->getVcsApi()->enableReleaseAssets();
