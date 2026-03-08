@@ -57,6 +57,8 @@ function baby_get_paystack_secret_key() {
         return trim(PAYSTACK_SECRET_KEY);
     }
 
+    baby_vp_log( 'paystack', 'Paystack secret key could not be found in configured settings.', [], 'warning' );
+
     return '';
 }
 
@@ -113,12 +115,22 @@ function baby_ps_fetch_customer_id($secret, $email) {
         'timeout' => 20
     ]);
 
-    if (is_wp_error($res)) return null;
-    if ((int)wp_remote_retrieve_response_code($res) !== 200) return null;
+    if (is_wp_error($res)) {
+        baby_vp_log( 'paystack', 'Paystack customer lookup failed.', [ 'email' => $email, 'error' => $res ], 'error' );
+        return null;
+    }
+    if ((int)wp_remote_retrieve_response_code($res) !== 200) {
+        baby_vp_log( 'paystack', 'Paystack customer lookup returned unexpected status.', [ 'email' => $email, 'status_code' => (int) wp_remote_retrieve_response_code($res) ], 'warning' );
+        return null;
+    }
 
     $j = json_decode((string)wp_remote_retrieve_body($res), true);
     $data = $j['data'] ?? [];
     $id = $data['id'] ?? null;
+
+    if ( ! $id ) {
+        baby_vp_log( 'paystack', 'Paystack customer lookup returned no customer ID.', [ 'email' => $email ], 'warning' );
+    }
 
     return $id ? (int)$id : null;
 }
@@ -145,8 +157,14 @@ function baby_ps_list_transactions($secret, $customer_id, $from_iso, $to_iso) {
             'timeout' => 20
         ]);
 
-        if (is_wp_error($res)) break;
-        if ((int)wp_remote_retrieve_response_code($res) !== 200) break;
+        if (is_wp_error($res)) {
+            baby_vp_log( 'paystack', 'Paystack transaction list request failed.', [ 'customer_id' => (int) $customer_id, 'page' => (int) $page, 'error' => $res ], 'error' );
+            break;
+        }
+        if ((int)wp_remote_retrieve_response_code($res) !== 200) {
+            baby_vp_log( 'paystack', 'Paystack transaction list returned unexpected status.', [ 'customer_id' => (int) $customer_id, 'page' => (int) $page, 'status_code' => (int) wp_remote_retrieve_response_code($res) ], 'warning' );
+            break;
+        }
 
         $j = json_decode((string)wp_remote_retrieve_body($res), true);
         $data = $j['data'] ?? [];
@@ -207,11 +225,25 @@ function baby_ps_find_success_for_order($secret, WC_Order $order, $day_offset = 
     $order_ts_gmt = $dt_gmt ? (int)$dt_gmt->getTimestamp() : time();
 
     $cid = baby_ps_fetch_customer_id($secret, $email);
-    if (!$cid) return null;
+    if (!$cid) {
+        baby_vp_log( 'paystack', 'No Paystack customer found for order lookup.', [ 'order_id' => $order->get_id(), 'email' => $email ], 'warning' );
+        return null;
+    }
 
     list($from_iso, $to_iso) = baby_ps_day_range_utc($order_ts_gmt, $day_offset);
 
     $txs = baby_ps_list_transactions($secret, $cid, $from_iso, $to_iso);
+    $match = baby_ps_pick_success_match_by_orderno($txs, $order_number, $amount_kobo);
 
-    return baby_ps_pick_success_match_by_orderno($txs, $order_number, $amount_kobo);
+    baby_vp_log( 'paystack', 'Completed Paystack transaction lookup for order.', [
+        'order_id'    => $order->get_id(),
+        'customer_id' => (int) $cid,
+        'day_offset'  => (int) $day_offset,
+        'from'        => $from_iso,
+        'to'          => $to_iso,
+        'tx_count'    => is_array( $txs ) ? count( $txs ) : 0,
+        'match_found' => $match ? 1 : 0,
+    ] );
+
+    return $match;
 }

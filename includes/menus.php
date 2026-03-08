@@ -64,12 +64,14 @@ function baby_vp_maybe_add_fix_order_issues_menu_item( $page_id = 0 ) {
         }
 
         $created_menu_items[ $menu_id ] = (int) $new_item_db_id;
+
         if ( function_exists( 'baby_vp_log' ) ) {
             baby_vp_log( 'menus', 'Fix Order Issues menu item added.', [
-                'menu_id' => $menu_id,
+                'menu_id'      => $menu_id,
                 'menu_item_id' => (int) $new_item_db_id,
-                'location' => (string) $location_slug,
-                'page_id' => $page_id,
+                'location'     => (string) $location_slug,
+                'page_id'      => $page_id,
+                'type'         => baby_vp_get_menu_location_type( $location_slug ),
             ] );
         }
     }
@@ -120,45 +122,39 @@ function baby_vp_find_existing_fix_link_menu_item_id( array $items, $page_id, $p
 }
 
 function baby_vp_is_target_menu_location( $location_slug ) {
-    $type = baby_vp_get_menu_location_type( $location_slug );
-
-    if ( ! $type ) {
-        return false;
-    }
-
-    if ( 'primary' === $type ) {
-        return baby_vp_add_to_primary_menu_enabled();
-    }
-
-    if ( 'mobile' === $type ) {
-        return baby_vp_add_to_mobile_menu_enabled();
-    }
-
-    if ( 'footer' === $type ) {
-        return baby_vp_add_to_footer_menus_enabled();
-    }
-
-    return false;
+    return baby_vp_get_menu_location_type( $location_slug ) !== '';
 }
 
 function baby_vp_get_menu_location_type( $location_slug ) {
     $location_slug = strtolower( (string) $location_slug );
 
-    $footer_targets = [ 'footer', 'bottom-footer', 'footer-menu', 'footer_menu' ];
+    if ( strpos( $location_slug, 'footer' ) === 0 || strpos( $location_slug, 'footer' ) !== false ) {
+        return 'footer';
+    }
+
+    if ( strpos( $location_slug, 'mobile' ) === 0 || strpos( $location_slug, 'mobile' ) !== false ) {
+        return 'mobile';
+    }
+
+    if ( strpos( $location_slug, 'primary' ) === 0 || strpos( $location_slug, 'primary' ) !== false ) {
+        return 'primary';
+    }
+
+    $footer_targets = [ 'bottom-footer', 'footer-menu', 'footer_menu' ];
     foreach ( $footer_targets as $target ) {
         if ( $location_slug === $target || strpos( $location_slug, $target ) !== false ) {
             return 'footer';
         }
     }
 
-    $mobile_targets = [ 'mobile', 'handheld', 'offcanvas', 'drawer', 'sidemenu' ];
+    $mobile_targets = [ 'handheld', 'offcanvas', 'drawer', 'sidemenu' ];
     foreach ( $mobile_targets as $target ) {
         if ( $location_slug === $target || strpos( $location_slug, $target ) !== false ) {
             return 'mobile';
         }
     }
 
-    $primary_targets = [ 'primary', 'main', 'main-menu', 'header', 'top' ];
+    $primary_targets = [ 'main', 'main-menu', 'header', 'top' ];
     foreach ( $primary_targets as $target ) {
         if ( $location_slug === $target || strpos( $location_slug, $target ) !== false ) {
             return 'primary';

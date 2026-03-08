@@ -56,23 +56,11 @@ function baby_vp_should_enqueue_frontend_assets() {
         return false;
     }
 
-    if ( function_exists( 'is_order_received_page' ) && is_order_received_page() ) {
-        return true;
-    }
+    $is_order_received = function_exists( 'is_order_received_page' ) && is_order_received_page();
+    $is_view_order     = ( function_exists( 'is_view_order_page' ) && is_view_order_page() ) || ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url( 'view-order' ) );
+    $is_track_page     = baby_vp_is_current_track_orders_page();
 
-    if ( function_exists( 'is_view_order_page' ) && is_view_order_page() ) {
-        return true;
-    }
-
-    if ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url( 'view-order' ) ) {
-        return true;
-    }
-
-    if ( baby_vp_is_current_track_orders_page() ) {
-        return true;
-    }
-
-    return false;
+    return $is_order_received || $is_view_order || $is_track_page;
 }
 
 function baby_vp_is_current_track_orders_page() {
@@ -143,7 +131,7 @@ add_action('woocommerce_order_details_after_order_table', function($order) {
 
     echo '<a href="'.esc_url($page_url).'" class="button baby-vp-track-another">Track another order</a>';
 
-    if (in_array($order->get_status(), ['cancelled','pending'], true) && $order->get_payment_method() === 'paystack') {
+    if (in_array($order->get_status(), ['cancelled','pending','on-hold'], true) && $order->get_payment_method() === 'paystack') {
 
         $order_id  = $order->get_id();
         $order_key = $order->get_order_key();

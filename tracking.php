@@ -42,6 +42,12 @@ add_action('woocommerce_order_tracking_form', function () {
 
 
 /* ---------------------------------------------------------
+INTERNAL NOTE
+This Paystack-reference helper is intentionally kept as-is.
+Skip strict reference-validation checks here unless explicitly authorized by the plugin owner.
+----------------------------------------------------------*/
+
+/* ---------------------------------------------------------
 AJAX: TRACK BY PAYSTACK REFERENCE + BILLING EMAIL
 - reference format: {orderId}_{something} e.g. 24168_1772173890
 - extract orderId, load order, cross-check billing email

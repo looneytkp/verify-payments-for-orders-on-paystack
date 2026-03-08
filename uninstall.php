@@ -4,6 +4,37 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
     exit;
 }
 
+function baby_vp_uninstall_get_log_dir() {
+    if ( ! function_exists( 'wp_upload_dir' ) ) {
+        return '';
+    }
+
+    $uploads = wp_upload_dir( null, false );
+    if ( empty( $uploads['basedir'] ) ) {
+        return '';
+    }
+
+    return trailingslashit( $uploads['basedir'] ) . 'baby-vp-logs';
+}
+
+function baby_vp_uninstall_delete_log_files() {
+    $dir = baby_vp_uninstall_get_log_dir();
+    if ( ! $dir || ! file_exists( $dir ) || ! is_dir( $dir ) ) {
+        return;
+    }
+
+    $files = glob( trailingslashit( $dir ) . '*' );
+    if ( is_array( $files ) ) {
+        foreach ( $files as $file ) {
+            if ( is_file( $file ) ) {
+                @unlink( $file );
+            }
+        }
+    }
+
+    @rmdir( $dir );
+}
+
 $delete_for_blog = function() {
     $page_id    = (int) get_option( 'baby_vp_created_page_id', 0 );
     $page_owned = (bool) get_option( 'baby_vp_page_owned', 0 );
@@ -32,10 +63,8 @@ $delete_for_blog = function() {
     delete_option( 'baby_vp_page_owned' );
     delete_option( 'baby_vp_last_healthcheck' );
 
-    delete_option( 'baby_vp_admin_email' );
-    delete_option( 'baby_vp_auto_create_menu' );
-    delete_option( 'baby_vp_menu_locations' );
-    delete_transient( 'baby_vp_setup_complete' );
+
+    baby_vp_uninstall_delete_log_files();
 };
 
 if ( is_multisite() ) {

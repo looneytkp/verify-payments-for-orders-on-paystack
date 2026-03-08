@@ -12,6 +12,7 @@ function baby_send_verify_admin_email( WC_Order $order, array $payment = [] ) {
 
     $to = baby_vp_admin_email();
     if ( empty( $to ) ) {
+        baby_vp_log( 'email', 'Admin verification email skipped because no admin email is configured.', [ 'order_id' => $order->get_id() ] );
         return;
     }
 
@@ -61,8 +62,16 @@ function baby_send_verify_admin_email( WC_Order $order, array $payment = [] ) {
     $lines[] = 'Admin Link:';
     $lines[] = admin_url( 'post.php?post=' . $order_id . '&action=edit' );
 
-    wp_mail( $to, $subject, implode( "\n", $lines ) );
+    $sent = wp_mail( $to, $subject, implode( "\n", $lines ) );
+
+    baby_vp_log( 'email', 'Admin verification email processed.', [
+        'order_id' => $order_id,
+        'to'       => $to,
+        'sent'     => $sent ? 1 : 0,
+        'subject'  => $subject,
+    ], $sent ? 'info' : 'error' );
 }
+
 
 /* ---------------------------------------------------------
 RATE LIMIT VERIFICATION ATTEMPTS
@@ -82,74 +91,12 @@ function baby_vp_rate_limit_check( $action = 'verify' ) {
     }
 
     if ( $attempts >= 5 ) {
+        baby_vp_log( 'security', 'Rate limit blocked request.', [ 'action' => $action, 'order_id' => $order_id, 'attempts' => (int) $attempts ], 'warning' );
         return false;
     }
 
     set_transient( $key, $attempts + 1, 10 * MINUTE_IN_SECONDS );
     return true;
-}
-
-/* ---------------------------------------------------------
-ADMIN ORDER ACTION + NOTICES
-----------------------------------------------------------*/
-
-add_filter( 'woocommerce_order_actions', 'baby_vp_add_admin_order_action' );
-add_action( 'woocommerce_order_action_baby_vp_verify_paystack', 'baby_vp_handle_admin_order_action' );
-add_action( 'admin_notices', 'baby_vp_render_admin_notice' );
-
-function baby_vp_add_admin_order_action( $actions ) {
-    $actions['baby_vp_verify_paystack'] = 'Verify Paystack Payment';
-    return $actions;
-}
-
-function baby_vp_set_admin_notice( $message, $type = 'success' ) {
-    $user_id = get_current_user_id();
-    if ( ! $user_id ) {
-        return;
-    }
-    set_transient( 'baby_vp_admin_notice_' . $user_id, [
-        'message' => wp_strip_all_tags( $message ),
-        'type'    => $type === 'error' ? 'error' : 'success',
-    ], 60 );
-}
-
-function baby_vp_render_admin_notice() {
-    if ( ! is_admin() ) {
-        return;
-    }
-
-    $screen    = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-    $screen_id = $screen && ! empty( $screen->id ) ? (string) $screen->id : '';
-
-    if ( ! in_array( $screen_id, [ 'shop_order', 'woocommerce_page_wc-orders' ], true ) ) {
-        return;
-    }
-
-    $user_id = get_current_user_id();
-    $notice  = $user_id ? get_transient( 'baby_vp_admin_notice_' . $user_id ) : false;
-    if ( ! is_array( $notice ) || empty( $notice['message'] ) ) {
-        return;
-    }
-
-    delete_transient( 'baby_vp_admin_notice_' . $user_id );
-    $class = ! empty( $notice['type'] ) && $notice['type'] === 'error' ? 'notice notice-error' : 'notice notice-success';
-    echo '<div class="' . esc_attr( $class ) . ' is-dismissible"><p>' . esc_html( $notice['message'] ) . '</p></div>';
-}
-
-function baby_vp_handle_admin_order_action( $order ) {
-    if ( ! current_user_can( 'manage_woocommerce' ) ) {
-        baby_vp_set_admin_notice( 'You do not have permission to verify this payment.', 'error' );
-        return;
-    }
-
-    $result = baby_vp_attempt_verify_payment( $order, 'admin' );
-
-    if ( is_wp_error( $result ) ) {
-        baby_vp_set_admin_notice( $result->get_error_message(), 'error' );
-        return;
-    }
-
-    baby_vp_set_admin_notice( 'Paystack payment verified successfully.' );
 }
 
 /* ---------------------------------------------------------
@@ -163,7 +110,14 @@ function baby_vp_attempt_verify_payment( $order, $initiated_by = 'customer' ) {
 
     $order_id = $order->get_id();
 
-    if ( ! in_array( $order->get_status(), [ 'cancelled', 'pending' ], true ) ) {
+    baby_vp_log( 'verify', 'Verification attempt started.', [
+        'order_id'     => $order_id,
+        'initiated_by' => $initiated_by,
+        'status'       => $order->get_status(),
+        'payment_method' => $order->get_payment_method(),
+    ] );
+
+    if ( ! in_array( $order->get_status(), [ 'cancelled', 'pending', 'on-hold' ], true ) ) {
         baby_vp_log( 'verify', 'Verification skipped: order status not allowed.', [ 'order_id' => $order_id, 'status' => $order->get_status() ] );
         return new WP_Error( 'bad_status', 'Order cannot be verified' );
     }
@@ -181,6 +135,7 @@ function baby_vp_attempt_verify_payment( $order, $initiated_by = 'customer' ) {
 
     $match = baby_ps_find_success_for_order( $secret, $order, 0 );
     if ( ! $match ) {
+        baby_vp_log( 'verify', 'No Paystack match found on order day. Trying next day.', [ 'order_id' => $order_id ] );
         $match = baby_ps_find_success_for_order( $secret, $order, 1 );
     }
 
@@ -198,37 +153,34 @@ function baby_vp_attempt_verify_payment( $order, $initiated_by = 'customer' ) {
     }
 
     $order->payment_complete( $ref );
-    $order->update_status( 'processing', 'Payment verified by ' . $initiated_by );
     $order->add_order_note( 'Paystack payment verified by plugin (' . $initiated_by . '). Reference: ' . $ref );
+    $order->update_meta_data( '_baby_vp_email_notice_ts', time() );
+    $order->save();
+
+    $new_status = $order->get_status();
+    $email_sent = in_array( $new_status, [ 'processing', 'completed' ], true );
 
     baby_vp_log( 'verify', 'Payment verified successfully.', [
-        'order_id'   => $order_id,
-        'reference'  => $ref,
-        'new_status' => 'processing',
+        'order_id'     => $order_id,
+        'reference'    => $ref,
+        'new_status'   => $new_status,
+        'email_sent'   => $email_sent ? 1 : 0,
         'initiated_by' => $initiated_by,
     ] );
 
     baby_send_verify_admin_email( $order, $payment );
 
-    $mailer = WC()->mailer();
-    $emails = $mailer->get_emails();
-
-    if ( ! empty( $emails['WC_Email_Customer_Processing_Order'] ) ) {
-        $emails['WC_Email_Customer_Processing_Order']->trigger( $order_id );
-        $order->update_meta_data( '_baby_vp_email_notice_ts', time() );
-        $order->save();
-    }
-
-    baby_vp_log( 'verify', 'Processing email triggered after verification.', [
-        'order_id'   => $order_id,
-        'email_sent' => ! empty( $emails['WC_Email_Customer_Processing_Order'] ),
+    baby_vp_log( 'verify', 'WooCommerce payment completion flow finished after verification.', [
+        'order_id'     => $order_id,
+        'new_status'   => $new_status,
+        'email_sent'   => $email_sent ? 1 : 0,
         'initiated_by' => $initiated_by,
     ] );
 
     return [
         'message'    => 'Payment verified successfully',
-        'new_status' => 'processing',
-        'email_sent' => ! empty( $emails['WC_Email_Customer_Processing_Order'] ),
+        'new_status' => $new_status,
+        'email_sent' => $email_sent,
         'reference'  => $ref,
     ];
 }

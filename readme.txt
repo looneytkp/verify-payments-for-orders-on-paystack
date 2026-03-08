@@ -4,7 +4,7 @@ Tags: paystack, woocommerce, order tracking, payment verification
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 1.1.3
+Stable tag: 1.1.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,7 @@ Key features include:
 * Automatically update verified orders to **Processing**
 * Automatically resend WooCommerce order confirmation email after verification
 * Send an optional admin notification when a payment is successfully verified
+* Includes plugin diagnostics, recent log viewing, export, and clear-log tools
 * Supports **WordPress multisite networks**
 * Automatically creates a **Track Orders page** during plugin activation
 * Compatible with WooCommerce Paystack gateway settings
@@ -72,6 +73,24 @@ Yes. Both logged-in and guest customers can verify payments.
 The order status is changed to **Processing** and the WooCommerce order notification email is resent.
 
 == Changelog ==
+
+= 1.1.4 =
+* Added plugin-wide structured logging from activation onward, including setup, settings, menus, verification, email, Paystack API lookups, and diagnostics actions.
+* Added a dedicated plugin log file with recent-log viewing directly on the diagnostics page.
+* Added log export and improved clear-log handling so the log file is recreated immediately with a fresh "logs cleared" marker entry.
+* Removed the old unused menu helper functions tied to the retired per-location toggles.
+* Diagnostics and self-repair now use the same tracking-page content validation rules for consistent checks.
+* Verification now supports pending, on-hold, and cancelled Paystack orders from the customer-facing flow for both logged-in users and guests.
+* Verification now relies on WooCommerce payment completion flow to avoid duplicate processing/status/email handling.
+* Frontend plugin assets remain limited to the order received page, view order page, and track page only.
+* Uninstall cleanup now removes only the current plugin options, tracked items, and saved plugin log files for fresh-install setups.
+* Diagnostics now shows plugin log file status in addition to WooCommerce log-source details.
+* Moved diagnostics under WooCommerce for easier access.
+* Removed separate Primary, Mobile, and Footer menu toggles.
+* Menu integration now automatically targets detected primary, mobile, and footer locations.
+* Added detected menu-location status under the menu integration setting.
+* Added a Verify Paystack settings tab inside WooCommerce settings.
+* Removed the WooCommerce admin order action so payment verification uses only the single customer-facing flow on the order received page, view order page, and track page.
 
 = 1.1.3 =
 * Added safer menu checks before creating any Fix Order Issues menu item.

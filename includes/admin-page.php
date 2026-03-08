@@ -71,8 +71,9 @@ function baby_vp_handle_run_setup_again() {
 
     check_admin_referer( 'baby_vp_run_setup_again' );
 
+    baby_vp_log( 'setup', 'Manual setup rerun requested from admin page.', [] );
     baby_vp_reset_setup_done();
-    baby_vp_run_setup();
+    baby_vp_run_setup( 'manual_setup_page' );
 
     wp_safe_redirect(
         add_query_arg(
