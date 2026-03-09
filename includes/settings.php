@@ -48,24 +48,14 @@ function baby_vp_register_settings() {
 function baby_vp_get_settings_fields() {
     return [
         'admin_email'              => 'Admin notification email',
-        'auto_create_page'         => 'Auto-create tracking page',
         'menu_integration_enabled' => 'Enable menu integration',
-        'menu_label'               => 'Menu label',
-        'page_title'               => 'Page title',
-        'page_slug'                => 'Page slug',
-        'enable_self_repair'       => 'Enable self-repair',
     ];
 }
 
 function baby_vp_get_settings_defaults() {
     return [
         'admin_email'              => '',
-        'auto_create_page'         => 1,
         'menu_integration_enabled' => 0,
-        'menu_label'               => 'Fix Order Issues',
-        'page_title'               => 'Track Orders',
-        'page_slug'                => 'track-orders',
-        'enable_self_repair'       => 1,
     ];
 }
 
@@ -110,8 +100,6 @@ function baby_vp_log_settings_changes( array $old_settings, array $new_settings 
         baby_vp_log( 'settings', 'Plugin settings saved.', [
             'changes' => $changes,
         ] );
-    } else {
-        baby_vp_log( 'settings', 'Plugin settings saved with no detected changes.', [] );
     }
 }
 
@@ -126,27 +114,9 @@ function baby_vp_sanitize_settings( $input ) {
         $output['admin_email'] = '';
     }
 
-    $output['auto_create_page']         = ! empty( $input['auto_create_page'] ) ? 1 : 0;
     $output['menu_integration_enabled'] = ! empty( $input['menu_integration_enabled'] ) ? 1 : 0;
 
-    $output['menu_label'] = isset( $input['menu_label'] ) ? sanitize_text_field( $input['menu_label'] ) : $defaults['menu_label'];
-    if ( $output['menu_label'] === '' ) {
-        $output['menu_label'] = $defaults['menu_label'];
-    }
-
-    $output['page_title'] = isset( $input['page_title'] ) ? sanitize_text_field( $input['page_title'] ) : $defaults['page_title'];
-    if ( $output['page_title'] === '' ) {
-        $output['page_title'] = $defaults['page_title'];
-    }
-
-    $slug = isset( $input['page_slug'] ) ? sanitize_title( $input['page_slug'] ) : $defaults['page_slug'];
-    $output['page_slug'] = $slug !== '' ? $slug : $defaults['page_slug'];
-
-    $output['enable_self_repair'] = ! empty( $input['enable_self_repair'] ) ? 1 : 0;
-
     $old_settings = baby_vp_get_settings();
-
-    baby_vp_reset_setup_done();
     baby_vp_log_settings_changes( $old_settings, $output );
 
     return $output;
@@ -158,20 +128,10 @@ function baby_vp_render_settings_field( $args ) {
     $value    = isset( $settings[ $key ] ) ? $settings[ $key ] : '';
     $name     = 'baby_vp_settings[' . $key . ']';
 
-    $checkboxes = [
-        'auto_create_page',
-        'menu_integration_enabled',
-        'enable_self_repair',
-    ];
-
-    if ( in_array( $key, $checkboxes, true ) ) {
+    if ( 'menu_integration_enabled' === $key ) {
         echo '<label><input type="checkbox" name="' . esc_attr( $name ) . '" value="1" ' . checked( ! empty( $value ), true, false ) . '> Enable</label>';
-
-        if ( 'menu_integration_enabled' === $key ) {
-            echo '<p class="description">Disabled by default. Fresh installs and plugin updates will not edit menus unless you enable this.</p>';
-            echo baby_vp_get_menu_location_status_html();
-        }
-
+        echo '<p class="description">Disabled by default. The plugin will only add the Fix Order Issues link to assigned menus after you enable this.</p>';
+        echo baby_vp_get_menu_location_status_html();
         return;
     }
 
@@ -184,27 +144,31 @@ function baby_vp_render_settings_field( $args ) {
 }
 
 function baby_vp_get_menu_location_status_html() {
-    if ( ! function_exists( 'get_nav_menu_locations' ) ) {
+    if ( ! function_exists( 'get_registered_nav_menus' ) ) {
         return '<p class="description">Menu status: navigation menus are not available on this site.</p>';
     }
 
-    $locations = get_nav_menu_locations();
-    $found = [
+    $registered = get_registered_nav_menus();
+    $assigned   = function_exists( 'get_nav_menu_locations' ) ? get_nav_menu_locations() : [];
+    $found      = [
         'primary' => [],
         'mobile'  => [],
         'footer'  => [],
     ];
 
-    if ( is_array( $locations ) ) {
-        foreach ( $locations as $location_slug => $menu_id ) {
-            if ( ! $menu_id ) {
+    if ( is_array( $registered ) ) {
+        foreach ( $registered as $location_slug => $description ) {
+            $type = function_exists( 'baby_vp_get_menu_location_type' ) ? baby_vp_get_menu_location_type( $location_slug ) : '';
+            if ( ! $type || ! isset( $found[ $type ] ) ) {
                 continue;
             }
 
-            $type = function_exists( 'baby_vp_get_menu_location_type' ) ? baby_vp_get_menu_location_type( $location_slug ) : '';
-            if ( $type && isset( $found[ $type ] ) ) {
-                $found[ $type ][] = (string) $location_slug;
+            $label = (string) $location_slug;
+            if ( empty( $assigned[ $location_slug ] ) ) {
+                $label .= ' (unassigned)';
             }
+
+            $found[ $type ][] = $label;
         }
     }
 
@@ -229,10 +193,6 @@ function baby_vp_render_wc_settings_tab() {
     }
 
     echo '<h2>Verify Paystack</h2>';
-    echo '<p>';
-    echo '<a href="' . esc_url( admin_url( 'admin.php?page=baby-vp-diagnostics' ) ) . '" class="button" style="margin-right:8px;">Open Diagnostics</a>';
-    echo '<a href="' . esc_url( admin_url( 'tools.php?page=baby-vp-setup' ) ) . '" class="button">Open Setup Page</a>';
-    echo '</p>';
     echo '<table class="form-table" role="presentation">';
 
     foreach ( baby_vp_get_settings_fields() as $key => $label ) {
@@ -269,11 +229,6 @@ function baby_vp_render_settings_page() {
     ?>
     <div class="wrap">
         <h1>Verify Paystack Settings</h1>
-        <p>
-            <a href="<?php echo esc_url( admin_url( 'admin.php?page=wc-settings&tab=baby_vp' ) ); ?>" class="button">Open WooCommerce Settings Tab</a>
-            <a href="<?php echo esc_url( admin_url( 'admin.php?page=baby-vp-diagnostics' ) ); ?>" class="button">Open Diagnostics</a>
-            <a href="<?php echo esc_url( admin_url( 'tools.php?page=baby-vp-setup' ) ); ?>" class="button">Open Setup Page</a>
-        </p>
         <form method="post" action="options.php">
             <?php
             settings_fields( 'baby_vp_settings_group' );

@@ -73,6 +73,56 @@ function baby_send_verify_admin_email( WC_Order $order, array $payment = [] ) {
 }
 
 
+
+/* ---------------------------------------------------------
+EMAIL MESSAGE: FIX ORDER ISSUES LINK
+Shown inside WooCommerce customer emails before the order table.
+----------------------------------------------------------*/
+
+add_action( 'woocommerce_email_before_order_table', 'baby_vp_render_email_fix_order_issues_notice', 25, 4 );
+
+function baby_vp_get_track_orders_page_url() {
+    $page_id = function_exists( 'baby_vp_get_or_create_track_orders_page' ) ? baby_vp_get_or_create_track_orders_page() : 0;
+
+    if ( $page_id ) {
+        $url = get_permalink( $page_id );
+        if ( $url ) {
+            return $url;
+        }
+    }
+
+    $slug = function_exists( 'baby_vp_get_track_orders_page_slug' ) ? baby_vp_get_track_orders_page_slug() : 'track-orders';
+    return home_url( '/' . trim( $slug, '/' ) . '/' );
+}
+
+function baby_vp_render_email_fix_order_issues_notice( $order, $sent_to_admin, $plain_text, $email ) {
+    if ( $sent_to_admin || ! $order || ! is_a( $order, 'WC_Order' ) ) {
+        return;
+    }
+
+    if ( ! is_object( $email ) || empty( $email->id ) || strpos( (string) $email->id, 'customer_' ) !== 0 ) {
+        return;
+    }
+
+    $url = baby_vp_get_track_orders_page_url();
+    if ( ! $url ) {
+        return;
+    }
+
+    $message = 'If you have any payment issues with your orders, check and fix them here:';
+    $label   = 'Fix Order Issues';
+
+    if ( $plain_text ) {
+        echo "
+" . $message . ' ' . $label . ': ' . esc_url_raw( $url ) . "
+
+";
+        return;
+    }
+
+    echo '<p style="margin:0 0 16px;">' . esc_html( $message ) . ' <a href="' . esc_url( $url ) . '"><strong>' . esc_html( $label ) . '</strong></a>.</p>';
+}
+
 /* ---------------------------------------------------------
 RATE LIMIT VERIFICATION ATTEMPTS
 Max 5 attempts per IP + order every 10 minutes

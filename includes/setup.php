@@ -16,23 +16,12 @@ function baby_vp_admin_email() {
     return is_email( $email ) ? $email : '';
 }
 
-function baby_vp_auto_create_page_enabled() {
-    return (bool) ( function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'auto_create_page', 1 ) : 1 );
-}
-
 function baby_vp_menu_integration_enabled() {
     return (bool) ( function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'menu_integration_enabled', 0 ) : 0 );
 }
 
 function baby_vp_get_menu_label() {
-    $label = function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'menu_label', 'Fix Order Issues' ) : 'Fix Order Issues';
-    $label = sanitize_text_field( $label );
-
-    return $label !== '' ? $label : 'Fix Order Issues';
-}
-
-function baby_vp_self_repair_enabled() {
-    return (bool) ( function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'enable_self_repair', 1 ) : 1 );
+    return 'Fix Order Issues';
 }
 
 function baby_vp_get_track_orders_page_content() {
@@ -48,17 +37,11 @@ function baby_vp_is_valid_track_orders_page_content( $content ) {
 }
 
 function baby_vp_get_track_orders_page_slug() {
-    $slug = function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'page_slug', 'track-orders' ) : 'track-orders';
-    $slug = sanitize_title( $slug );
-
-    return $slug !== '' ? $slug : 'track-orders';
+    return 'track-orders';
 }
 
 function baby_vp_get_track_orders_page_title() {
-    $title = function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'page_title', 'Track Orders' ) : 'Track Orders';
-    $title = sanitize_text_field( $title );
-
-    return $title !== '' ? $title : 'Track Orders';
+    return 'Track Orders';
 }
 
 function baby_vp_get_option( $key, $default = null ) {
@@ -110,7 +93,6 @@ function baby_vp_register_hooks() {
     register_activation_hook( BABY_VP_FILE, 'baby_vp_on_activate' );
     add_action( 'wp_initialize_site', 'baby_vp_on_new_site', 10, 2 );
     add_action( 'init', 'baby_vp_maybe_run_setup', 20 );
-    add_action( 'init', 'baby_vp_maybe_self_repair', 21 );
     add_action( 'after_switch_theme', 'baby_vp_flag_setup_for_rerun' );
     add_action( 'wp_update_nav_menu', 'baby_vp_flag_setup_for_rerun_on_menu_update', 10, 2 );
     add_action( 'customize_save_after', 'baby_vp_flag_setup_for_rerun' );
@@ -184,9 +166,7 @@ function baby_vp_maybe_run_setup() {
 function baby_vp_run_setup( $reason = 'manual' ) {
     baby_vp_log( 'setup', 'Setup run started.', [
         'reason'                   => (string) $reason,
-        'auto_create_page'         => baby_vp_auto_create_page_enabled() ? 1 : 0,
         'menu_integration_enabled' => baby_vp_menu_integration_enabled() ? 1 : 0,
-        'self_repair_enabled'      => baby_vp_self_repair_enabled() ? 1 : 0,
     ] );
 
     $page_id = baby_vp_get_or_create_track_orders_page();
@@ -195,7 +175,7 @@ function baby_vp_run_setup( $reason = 'manual' ) {
         baby_vp_maybe_add_fix_order_issues_menu_item( $page_id );
     }
 
-    if ( $page_id || ! baby_vp_auto_create_page_enabled() ) {
+    if ( $page_id ) {
         baby_vp_mark_setup_done();
         baby_vp_log( 'setup', 'Setup run completed.', [
             'reason'   => (string) $reason,
@@ -233,13 +213,6 @@ function baby_vp_get_or_create_track_orders_page() {
         ] );
         baby_vp_maybe_update_plugin_page( $page->ID );
         return (int) $page->ID;
-    }
-
-    if ( ! baby_vp_auto_create_page_enabled() ) {
-        baby_vp_log( 'setup', 'Tracking page auto-creation skipped because setting is disabled.', [
-            'slug' => $slug,
-        ] );
-        return 0;
     }
 
     $page_id = wp_insert_post( [
@@ -328,104 +301,3 @@ function baby_vp_maybe_update_plugin_page( $page_id ) {
     }
 }
 
-function baby_vp_maybe_self_repair() {
-    if ( ! baby_vp_self_repair_enabled() ) {
-        return;
-    }
-
-    if ( is_admin() && ! wp_doing_ajax() ) {
-        return;
-    }
-
-    $now  = time();
-    $last = (int) baby_vp_get_option( BABY_VP_OPTION_LAST_HEALTHCHECK, 0 );
-
-    if ( $last && ( $now - $last ) < 6 * HOUR_IN_SECONDS ) {
-        return;
-    }
-
-    baby_vp_update_option( BABY_VP_OPTION_LAST_HEALTHCHECK, $now );
-
-    $needs_repair = false;
-    $repair_reasons = [];
-    $page_id      = baby_vp_get_created_page_id();
-
-    if ( baby_vp_auto_create_page_enabled() ) {
-        if ( ! $page_id || ! get_post( $page_id ) ) {
-            $needs_repair     = true;
-            $repair_reasons[] = 'missing_page';
-        } else {
-            $post = get_post( $page_id );
-            if ( baby_vp_is_track_page_owned() && $post && ! baby_vp_is_valid_track_orders_page_content( $post->post_content ) ) {
-                $needs_repair     = true;
-                $repair_reasons[] = 'invalid_page_content';
-            }
-        }
-    }
-
-    if ( ! $needs_repair && baby_vp_menu_integration_enabled() ) {
-        $created_menu_items = baby_vp_get_created_menu_items();
-        $page_url           = $page_id ? get_permalink( $page_id ) : '';
-
-        foreach ( $created_menu_items as $menu_id => $item_id ) {
-            $menu_id = (int) $menu_id;
-            $item_id = (int) $item_id;
-
-            if ( ! $menu_id || ! $item_id ) {
-                continue;
-            }
-
-            $menu_item = wp_get_nav_menu_item( $item_id );
-            if ( ! $menu_item ) {
-                $needs_repair     = true;
-                $repair_reasons[] = 'missing_menu_item';
-                break;
-            }
-
-            $items = wp_get_nav_menu_items( $menu_id );
-            if ( ! is_array( $items ) || ! baby_vp_menu_already_has_fix_link( $items, $page_id, $page_url, $menu_id, $created_menu_items ) ) {
-                $needs_repair     = true;
-                $repair_reasons[] = 'menu_link_missing';
-                break;
-            }
-        }
-    }
-
-    if ( ! $needs_repair ) {
-        return;
-    }
-
-    baby_vp_log( 'setup', 'Self-repair triggered.', [
-        'page_id' => $page_id,
-        'reasons' => $repair_reasons,
-    ], 'warning' );
-
-    baby_vp_reset_setup_done();
-    baby_vp_run_setup( 'self_repair' );
-}
-
-if ( function_exists( 'add_action' ) ) {
-    add_action( 'wpmu_new_blog', 'baby_vp_on_new_blog_legacy', 10, 6 );
-}
-
-function baby_vp_on_new_blog_legacy( $blog_id, $user_id, $domain, $path, $site_id, $meta ) {
-    if ( ! is_multisite() ) {
-        return;
-    }
-
-    if ( ! function_exists( 'is_plugin_active_for_network' ) ) {
-        require_once ABSPATH . 'wp-admin/includes/plugin.php';
-    }
-
-    if ( ! is_plugin_active_for_network( plugin_basename( BABY_VP_FILE ) ) ) {
-        return;
-    }
-
-    switch_to_blog( (int) $blog_id );
-    baby_vp_log( 'plugin', 'Legacy new-blog hook triggered for network-activated plugin.', [
-        'blog_id' => (int) $blog_id,
-    ] );
-    baby_vp_reset_setup_done();
-    baby_vp_run_setup( 'new_blog_legacy' );
-    restore_current_blog();
-}

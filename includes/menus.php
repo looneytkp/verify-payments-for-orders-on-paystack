@@ -147,14 +147,14 @@ function baby_vp_get_menu_location_type( $location_slug ) {
         }
     }
 
-    $mobile_targets = [ 'handheld', 'offcanvas', 'drawer', 'sidemenu' ];
+    $mobile_targets = [ 'handheld', 'offcanvas', 'drawer', 'sidemenu', 'responsive', 'responsive-menu', 'mobile-menu', 'phone', 'tablet' ];
     foreach ( $mobile_targets as $target ) {
         if ( $location_slug === $target || strpos( $location_slug, $target ) !== false ) {
             return 'mobile';
         }
     }
 
-    $primary_targets = [ 'main', 'main-menu', 'header', 'top' ];
+    $primary_targets = [ 'main', 'main-menu', 'header', 'top', 'desktop', 'navigation', 'nav', 'menu-1' ];
     foreach ( $primary_targets as $target ) {
         if ( $location_slug === $target || strpos( $location_slug, $target ) !== false ) {
             return 'primary';
