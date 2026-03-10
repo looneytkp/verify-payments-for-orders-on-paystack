@@ -17,15 +17,20 @@ function baby_vp_admin_email() {
 }
 
 function baby_vp_menu_integration_enabled() {
-    return (bool) ( function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'menu_integration_enabled', 0 ) : 0 );
+    $selected_locations = function_exists( 'baby_vp_get_selected_menu_locations' ) ? baby_vp_get_selected_menu_locations() : [];
+    return ! empty( $selected_locations );
 }
 
 function baby_vp_get_menu_label() {
-    return 'Fix Order Issues';
+    $default = function_exists( 'baby_vp_get_default_menu_item_text' ) ? baby_vp_get_default_menu_item_text() : 'Fix Order Issues';
+    $label   = function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'menu_item_text', $default ) : $default;
+    $label   = sanitize_text_field( (string) $label );
+
+    return '' !== $label ? $label : $default;
 }
 
 function baby_vp_get_track_orders_page_content() {
-    $content = '[baby_vp_fix_order_issues]';
+    $content = '<div style="height:20px;"></div>[baby_vp_fix_order_issues]';
 
     return (string) apply_filters( 'baby_vp_track_orders_page_content', $content );
 }
@@ -93,6 +98,7 @@ function baby_vp_register_hooks() {
     register_activation_hook( BABY_VP_FILE, 'baby_vp_on_activate' );
     add_action( 'wp_initialize_site', 'baby_vp_on_new_site', 10, 2 );
     add_action( 'init', 'baby_vp_maybe_run_setup', 20 );
+    add_action( 'admin_init', 'baby_vp_maybe_sync_selected_menu_items_on_settings_load', 20 );
     add_action( 'after_switch_theme', 'baby_vp_flag_setup_for_rerun' );
     add_action( 'wp_update_nav_menu', 'baby_vp_flag_setup_for_rerun_on_menu_update', 10, 2 );
     add_action( 'customize_save_after', 'baby_vp_flag_setup_for_rerun' );
@@ -161,6 +167,26 @@ function baby_vp_maybe_run_setup() {
     }
 
     baby_vp_run_setup( 'init' );
+}
+
+function baby_vp_maybe_sync_selected_menu_items_on_settings_load() {
+    if ( ! is_admin() || ! baby_vp_menu_integration_enabled() ) {
+        return;
+    }
+
+    $page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+    $tab  = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
+
+    if ( 'baby-vp-settings' !== $page && 'baby_vp' !== $tab ) {
+        return;
+    }
+
+    $page_id = baby_vp_get_or_create_track_orders_page();
+    if ( ! $page_id ) {
+        return;
+    }
+
+    baby_vp_maybe_add_fix_order_issues_menu_item( $page_id );
 }
 
 function baby_vp_run_setup( $reason = 'manual' ) {

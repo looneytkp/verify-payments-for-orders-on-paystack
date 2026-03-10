@@ -109,18 +109,24 @@ function baby_vp_render_email_fix_order_issues_notice( $order, $sent_to_admin, $
         return;
     }
 
-    $message = 'If you have any payment issues with your orders, check and fix them here:';
-    $label   = 'Fix Order Issues';
+    $message = function_exists( 'baby_vp_get_setting' )
+        ? baby_vp_get_setting( 'email_notice_text', function_exists( 'baby_vp_get_default_email_notice_text' ) ? baby_vp_get_default_email_notice_text() : '' )
+        : '';
+    $message = sanitize_textarea_field( (string) $message );
+
+    if ( '' === trim( $message ) ) {
+        return;
+    }
 
     if ( $plain_text ) {
         echo "
-" . $message . ' ' . $label . ': ' . esc_url_raw( $url ) . "
+" . $message . "
 
 ";
         return;
     }
 
-    echo '<p style="margin:0 0 16px;">' . esc_html( $message ) . ' <a href="' . esc_url( $url ) . '"><strong>' . esc_html( $label ) . '</strong></a>.</p>';
+    echo '<p style="margin:0 0 16px;">' . esc_html( $message ) . '</p>';
 }
 
 /* ---------------------------------------------------------

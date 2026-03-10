@@ -4,7 +4,7 @@ Tags: paystack, woocommerce, order tracking, payment verification
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 1.1.5
+Stable tag: 1.1.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,6 +72,15 @@ Yes. Both logged-in and guest customers can verify payments.
 The order status is changed to **Processing** and the WooCommerce order notification email is resent.
 
 == Changelog ==
+
+= 1.1.7 =
+* Fixed menu integration so saving a selected menu location immediately adds the plugin menu item to that menu.
+
+= 1.1.6 =
+* Added a new Email notice text setting so the customer email message can be changed from plugin settings.
+* Removed the separate Fix Order Issues link from the WooCommerce customer email notice so the saved email text is shown by itself.
+* Added a new Menu item text setting so the plugin-added menu label can be changed from plugin settings.
+* Saving plugin settings now reruns setup so existing plugin-added menu items update to the new saved label.
 
 = 1.1.5 =
 * Fixed track page to a single internal slug: /track-orders/.
