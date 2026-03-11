@@ -28,6 +28,9 @@ function baby_send_verify_admin_email( WC_Order $order, array $payment = [] ) {
 
     $paid_kobo  = intval( $payment['amount'] ?? 0 );
     $paid_amt   = $paid_kobo ? number_format( $paid_kobo / 100, 2 ) : '';
+    $tolerance_display = '0.02';
+    $order_amount      = number_format( (float) $order->get_total(), 2 );
+    $paystack_amount   = $paid_kobo ? number_format( $paid_kobo / 100, 2 ) : '';
     $paid_at    = $payment['paid_at'] ?? '';
     $channel    = $payment['channel'] ?? '';
 
@@ -40,6 +43,10 @@ function baby_send_verify_admin_email( WC_Order $order, array $payment = [] ) {
     $lines[] = "Phone: {$phone}";
     $lines[] = "Order Total: {$total}";
     $lines[] = "Reference: {$ref}";
+    $lines[] = "Amount tolerance applied: ±{$tolerance_display}";
+    if ( $paystack_amount !== '' ) {
+        $lines[] = "Amount compared: {$order_amount} vs {$paystack_amount}";
+    }
 
     if ( $paid_amt ) {
         $lines[] = 'Paid Amount: ' . $paid_amt . ' ' . $order->get_currency();

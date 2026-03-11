@@ -4,7 +4,7 @@ Tags: paystack, woocommerce, order tracking, payment verification
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 8.0
-Stable tag: 1.1.7
+Stable tag: 1.1.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,6 +72,13 @@ Yes. Both logged-in and guest customers can verify payments.
 The order status is changed to **Processing** and the WooCommerce order notification email is resent.
 
 == Changelog ==
+
+= 1.1.8 =
+* Added amount tolerance (±0.02) when matching Paystack transaction amounts to WooCommerce orders to handle rounding differences.
+* Improved admin verification email to display:
+  - Amount tolerance applied
+  - Order amount vs Paystack amount comparison
+* Minor internal improvements to verification reporting in admin email.
 
 = 1.1.7 =
 * Fixed menu integration so saving a selected menu location immediately adds the plugin menu item to that menu.

@@ -199,7 +199,8 @@ function baby_ps_pick_success_match_by_orderno($txs, $order_number, $amount_kobo
         if ($st !== 'success') continue;
 
         $amt = (int)($t['amount'] ?? 0);
-        if ($amt !== (int)$amount_kobo) continue;
+        $tolerance = 2; // allows ±0.02
+        if (abs($amt - (int)$amount_kobo) > $tolerance) continue;
 
         $ref = trim((string)($t['reference'] ?? ''));
         if (!$ref) continue;
