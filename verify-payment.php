@@ -125,15 +125,17 @@ function baby_vp_render_email_fix_order_issues_notice( $order, $sent_to_admin, $
         return;
     }
 
-    if ( $plain_text ) {
-        echo "
-" . $message . "
+    $link_text = 'Fix order issues';
 
-";
+    if ( $plain_text ) {
+        echo "\n" . $message . ' ' . $link_text . ': ' . esc_url_raw( $url ) . "\n\n";
         return;
     }
 
-    echo '<p style="margin:0 0 16px;">' . esc_html( $message ) . '</p>';
+    echo '<p style="margin:0 0 16px;">'
+        . esc_html( $message )
+        . ' <a href="' . esc_url( $url ) . '">' . esc_html( $link_text ) . '</a>'
+        . '</p>';
 }
 
 /* ---------------------------------------------------------

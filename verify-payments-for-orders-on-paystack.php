@@ -2,7 +2,7 @@
 /*
 Plugin Name: Verify Payments for Orders on Paystack
 Description: Track WooCommerce orders using Paystack reference and verify payments for cancelled or pending Paystack orders.
-Version: 1.1.8
+Version: 1.1.9
 Author: Swiftstack Innovations
 Requires at least: 6.3
 Requires PHP: 8.0
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'BABY_VP_VERSION', '1.1.8' );
+define( 'BABY_VP_VERSION', '1.1.9' );
 define( 'BABY_VP_FILE', __FILE__ );
 define( 'BABY_VP_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BABY_VP_URL', plugin_dir_url( __FILE__ ) );
