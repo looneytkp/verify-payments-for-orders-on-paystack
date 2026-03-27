@@ -80,6 +80,7 @@ function baby_vp_get_settings_fields() {
         'admin_email'       => 'Admin notification email',
         'email_notice_text' => 'Email notice text',
         'menu_item_text'    => 'Menu item text',
+        'track_page_title'  => 'Track Orders page title',
         'menu_locations'    => 'Menu integration',
     ];
 }
@@ -89,6 +90,7 @@ function baby_vp_get_settings_defaults() {
         'admin_email'       => '',
         'email_notice_text' => baby_vp_get_default_email_notice_text(),
         'menu_item_text'    => baby_vp_get_default_menu_item_text(),
+        'track_page_title'  => 'Track Orders',
         'menu_locations'    => [],
     ];
 }
@@ -191,6 +193,45 @@ function baby_vp_get_detected_menu_locations() {
     return $detected;
 }
 
+function baby_vp_menu_location_has_track_page_item( $location_slug ) {
+    $location_slug = sanitize_key( $location_slug );
+    if ( '' === $location_slug ) {
+        return false;
+    }
+
+    if ( ! function_exists( 'get_nav_menu_locations' ) || ! function_exists( 'wp_get_nav_menu_items' ) ) {
+        return false;
+    }
+
+    $page_id = function_exists( 'baby_vp_get_or_create_track_orders_page' ) ? (int) baby_vp_get_or_create_track_orders_page() : 0;
+    if ( ! $page_id ) {
+        return false;
+    }
+
+    $assigned = get_nav_menu_locations();
+    $menu_id  = isset( $assigned[ $location_slug ] ) ? (int) $assigned[ $location_slug ] : 0;
+    if ( ! $menu_id ) {
+        return false;
+    }
+
+    $items = wp_get_nav_menu_items( $menu_id );
+    if ( empty( $items ) || ! is_array( $items ) ) {
+        return false;
+    }
+
+    foreach ( $items as $item ) {
+        if (
+            isset( $item->object, $item->object_id ) &&
+            'page' === $item->object &&
+            (int) $item->object_id === $page_id
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function baby_vp_get_selected_menu_locations() {
     $saved    = baby_vp_normalize_menu_locations( baby_vp_get_setting( 'menu_locations', [] ) );
     $detected = baby_vp_get_detected_menu_locations();
@@ -199,7 +240,22 @@ function baby_vp_get_selected_menu_locations() {
         return [];
     }
 
-    return array_values( array_intersect( $saved, array_keys( $detected ) ) );
+    $valid_detected = array_keys( $detected );
+    $saved_selected = array_values( array_intersect( $saved, $valid_detected ) );
+
+    if ( ! empty( $saved_selected ) ) {
+        return $saved_selected;
+    }
+
+    $auto_selected = [];
+
+    foreach ( $valid_detected as $location_slug ) {
+        if ( baby_vp_menu_location_has_track_page_item( $location_slug ) ) {
+            $auto_selected[] = $location_slug;
+        }
+    }
+
+    return $auto_selected;
 }
 
 function baby_vp_sanitize_settings( $input ) {
@@ -221,6 +277,11 @@ function baby_vp_sanitize_settings( $input ) {
     $output['menu_item_text'] = isset( $input['menu_item_text'] ) ? sanitize_text_field( $input['menu_item_text'] ) : $defaults['menu_item_text'];
     if ( '' === trim( $output['menu_item_text'] ) ) {
         $output['menu_item_text'] = $defaults['menu_item_text'];
+    }
+
+    $output['track_page_title'] = isset( $input['track_page_title'] ) ? sanitize_text_field( $input['track_page_title'] ) : $defaults['track_page_title'];
+    if ( '' === trim( $output['track_page_title'] ) ) {
+        $output['track_page_title'] = $defaults['track_page_title'];
     }
 
     $detected_locations = array_keys( baby_vp_get_detected_menu_locations() );
@@ -273,6 +334,8 @@ function baby_vp_render_settings_field( $args ) {
         echo '<p class="description">Leave blank to disable admin notification emails.</p>';
     } elseif ( 'menu_item_text' === $key ) {
         echo '<p class="description">This text is used for the menu item added by the plugin.</p>';
+    } elseif ( 'track_page_title' === $key ) {
+        echo '<p class="description">This text is used for the Track Orders page title.</p>';
     }
 }
 

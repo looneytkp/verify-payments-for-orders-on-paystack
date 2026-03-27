@@ -46,7 +46,11 @@ function baby_vp_get_track_orders_page_slug() {
 }
 
 function baby_vp_get_track_orders_page_title() {
-    return 'Track Orders';
+    $default = 'Track Orders';
+    $title   = function_exists( 'baby_vp_get_setting' ) ? baby_vp_get_setting( 'track_page_title', $default ) : $default;
+    $title   = sanitize_text_field( (string) $title );
+
+    return '' !== $title ? $title : $default;
 }
 
 function baby_vp_get_option( $key, $default = null ) {

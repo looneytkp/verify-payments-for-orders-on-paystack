@@ -1,142 +1,96 @@
 === Verify Payments for Orders on Paystack ===
-Contributors: swiftstack innovations
-Tags: paystack, woocommerce, order tracking, payment verification
-Requires at least: 6.0
-Tested up to: 6.6
+Contributors: swiftstack
+Tags: woocommerce, paystack, payments, verification, orders
+Requires at least: 6.3
 Requires PHP: 8.0
-Stable tag: 1.1.9
+Tested up to: 6.5
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Track WooCommerce orders using Paystack references and allow customers to verify payments for cancelled or pending Paystack orders.
+Automatically verify WooCommerce orders paid via Paystack, fix payment issues, and allow customers to track orders using Order ID or Paystack reference.
 
 == Description ==
 
-Verify Payments for Orders on Paystack enhances the WooCommerce order tracking experience by allowing customers to confirm their Paystack payments directly from the order page.
+Verify Payments for Orders on Paystack improves WooCommerce payment reliability by allowing customers and store owners to verify Paystack payments and fix orders that were incorrectly marked as cancelled or pending.
 
-If a Paystack payment succeeds but the order remains **Pending** or **Cancelled**, customers can verify the payment themselves without contacting support.
+It also enhances the order tracking experience by allowing customers to track orders using either their Order ID or Paystack reference.
 
-Key features include:
+=== Key Features ===
 
-* Verify Paystack payments directly from the WooCommerce order details page
-* Allow order tracking using **Paystack reference + billing email**
-* Automatically update verified orders to **Processing**
-* Automatically resend WooCommerce order confirmation email after verification
-* Send an optional admin notification when a payment is successfully verified
-* Supports **WordPress multisite networks**
-* Automatically creates a **Track Orders page** during plugin activation
-* Compatible with WooCommerce Paystack gateway settings
-* Works for **logged-in and guest customers**
+* Verify Paystack payments directly from WooCommerce orders
+* Automatically match Paystack transactions using:
+  - billing email
+  - order date (with next-day fallback)
+  - transaction amount
+  - reference prefix (order number)
+* Update order status to processing when payment is confirmed
+* Automatically resend order confirmation email after successful verification
+
+=== Track Orders Enhancements ===
+
+Customers can track their orders using two methods:
+
+1. Order ID + Billing Email (standard WooCommerce flow)
+2. Paystack Reference + Billing Email (for customers without order ID)
+
+The plugin intelligently detects which method is used and processes accordingly.
+
+=== Menu Integration ===
+
+Optionally add a “Fix Order Issues” link to selected menu locations:
+* Primary menu
+* Mobile menu
+* Footer menu
+
+Menu locations are automatically detected and can be enabled from settings.
+
+=== Email Notice ===
+
+You can customize a message shown in WooCommerce emails, for example:
+
+"If you have any payment issues with your orders, check and fix them here:"
 
 == Installation ==
 
-1. Upload the plugin files to  
-   `/wp-content/plugins/verify-payments-for-orders-on-paystack/`
-
-2. Activate the plugin through the **Plugins** menu in WordPress.
-
-3. If using **WordPress Multisite**, network activate the plugin.
-
-4. A **Track Orders** page will automatically be created containing the WooCommerce tracking shortcode.
-5. Menu integration is disabled by default and can be enabled from the plugin settings page.
-
-== Usage ==
-
-Customers can verify payments in two ways:
-
-**1. From the order details page**
-* Open the order page
-* Click **Verify payment**
-* If Paystack confirms the payment, the order status updates automatically
-
-**2. From the Track Orders page**
-* Enter the **Paystack reference**
-* Enter the **billing email**
-* The plugin locates the correct order automatically
-
-== Requirements ==
-
-* WordPress 6.0 or higher
-* WooCommerce installed and active
-* WooCommerce Paystack payment gateway configured
+1. Upload the plugin files to `/wp-content/plugins/verify-payments-for-orders-on-paystack/`
+2. Activate the plugin through the WordPress admin
+3. Go to WooCommerce → Verify Paystack Settings
+4. Configure your options
 
 == Frequently Asked Questions ==
 
-= Does this plugin support multisite? =
-Yes. The plugin automatically creates the tracking page on all subsites when network activated.
+= Can customers track orders without an Order ID? =
+Yes. Customers can use their Paystack reference along with their billing email to locate their order.
 
-= Does it work for guest orders? =
-Yes. Both logged-in and guest customers can verify payments.
+= Does this plugin modify WooCommerce core tracking? =
+No. It extends the tracking process without breaking the default WooCommerce behavior.
 
-= What happens after a payment is verified? =
-The order status is changed to **Processing** and the WooCommerce order notification email is resent.
+= What happens when a payment is verified? =
+The order is updated to processing and the order confirmation email is resent.
+
+= Does it work with multisite? =
+Yes. Each site can have its own tracking page and settings.
 
 == Changelog ==
 
+= 1.2.0 =
+* Improved Track Orders page flow so customers can use either:
+  - Order ID + billing email, or
+  - Paystack reference + billing email
+* Fixed tracking form so entering Order ID + billing email no longer forces Paystack reference lookup
+* Added strict validation on Track Orders submit:
+  - Order ID requires billing email
+  - Paystack reference requires billing email
+  - users must use either Order ID or Paystack reference, not both
+
 = 1.1.9 =
-* Fixed customer email notice so "Fix order issues" now appears as a clickable link pointing to the site's order issue resolution page.
+* Minor fixes and improvements
 
 = 1.1.8 =
-* Added amount tolerance (±0.02) when matching Paystack transaction amounts to WooCommerce orders to handle rounding differences.
-* Improved admin verification email to display:
-  - Amount tolerance applied
-  - Order amount vs Paystack amount comparison
-* Minor internal improvements to verification reporting in admin email.
+* Improvements to menu integration and tracking page behavior
 
-= 1.1.7 =
-* Fixed menu integration so saving a selected menu location immediately adds the plugin menu item to that menu.
+== Upgrade Notice ==
 
-= 1.1.6 =
-* Added a new Email notice text setting so the customer email message can be changed from plugin settings.
-* Removed the separate Fix Order Issues link from the WooCommerce customer email notice so the saved email text is shown by itself.
-* Added a new Menu item text setting so the plugin-added menu label can be changed from plugin settings.
-* Saving plugin settings now reruns setup so existing plugin-added menu items update to the new saved label.
-
-= 1.1.5 =
-* Fixed track page to a single internal slug: /track-orders/.
-* Removed page title, page slug, and menu label from user settings.
-* Tracking page is now auto-created per site, including new sites on multisite.
-* Menu integration remains optional and applies to assigned menus on each site.
-* Uninstall now removes plugin options and only deletes the track-orders page when the plugin created it.
-* Simplified uninstall so plugin deletion only removes the plugin-created Track Orders page when the plugin owns it.
-* Added the Fix Order Issues message directly into WooCommerce customer email templates before the order table so it shows in test emails too.
-
-= 1.1.4 =
-* Removed the Tools menu setup page and its unused setup actions.
-* Removed the Diagnostics page, Diagnostics plugin link, log tools, and WooCommerce logs shortcut.
-* Removed plugin logging so the plugin stays focused on verification, tracking, setup, and menu insertion only.
-* Removed self-repair logic and its settings option.
-* Verify Paystack Settings no longer shows the old setup/diagnostics buttons.
-* Menu-location detection now checks registered theme locations and clearly marks unassigned ones.
-* Removed the old unused menu helper functions tied to the retired per-location toggles.
-* Verification now supports pending, on-hold, and cancelled Paystack orders from the customer-facing flow for both logged-in users and guests.
-* Verification now relies on WooCommerce payment completion flow to avoid duplicate processing/status/email handling.
-* Frontend plugin assets remain limited to the order received page, view order page, and track page only.
-* Removed separate Primary, Mobile, and Footer menu toggles.
-* Menu integration now automatically targets detected primary, mobile, and footer locations.
-* Added detected menu-location status under the menu integration setting.
-* Added a Verify Paystack settings tab inside WooCommerce settings.
-* Removed the WooCommerce admin order action so payment verification uses only the single customer-facing flow on the order received page, view order page, and track page.
-
-= 1.1.3 =
-* Added safer menu checks before creating any Fix Order Issues menu item.
-* Plugin now confirms the target page already exists in the assigned menu before adding it.
-* Added a duplicate-menu guard so the same assigned menu is only processed once even when reused across multiple theme locations.
-* Removed risky menu reordering during automatic menu insertion to avoid damaging existing menu structure.
-* Added a Settings link on the Plugins page for quicker access.
-* Menu integration is now disabled by default on fresh installs and updates until enabled in settings.
-* Added separate menu integration toggles for Primary, Mobile, and Footer menus.
-* Existing menu items are detected by linked page/object to avoid duplicates even if the title changes.
-* Admin notification email is now blank by default and only used after being set in settings.
-* Added uninstall cleanup for plugin settings, tracked plugin-created menu items, tracked healthcheck data, and the plugin-owned Track Orders page.
-
-= 1.1.2 =
-* Added GitHub updater branch support for reliable update detection.
-* Fixed Paystack tracking form JavaScript handling.
-* Added nonce protection to tracking verification endpoint.
-* Added rate limiting to tracking requests to prevent abuse.
-* Improved WooCommerce admin order action compatibility.
-* Optimized frontend assets to only load when required.
-* Fixed potential frontend form resubmission loop.
-* Improved diagnostics and logging reliability.
-* General stability improvements and internal cleanup.
+= 1.2.0 =
+Improves tracking logic and fixes incorrect Paystack reference prompts.

@@ -79,70 +79,118 @@ document.addEventListener("submit", function (e) {
     return;
   }
 
-  e.preventDefault();
+  const wcOrderInput = form.querySelector("#orderid");
+  const wcEmailInput = form.querySelector("#order_email");
 
   const refInput = form.querySelector("#baby_ps_reference");
-  const emailInput = form.querySelector("#baby_ps_email");
+  const psEmailInput = form.querySelector("#baby_ps_email");
+
   const errBox = document.querySelector(".baby-ps-track-error");
   const messages = babyVpFrontend.messages || {};
-  const ref = refInput ? refInput.value.trim() : "";
-  const email = emailInput ? emailInput.value.trim() : "";
 
-  if (!ref || !email) {
+  const wcOrder = wcOrderInput ? wcOrderInput.value.trim() : "";
+  const wcEmail = wcEmailInput ? wcEmailInput.value.trim() : "";
+
+  const ref = refInput ? refInput.value.trim() : "";
+  const psEmail = psEmailInput ? psEmailInput.value.trim() : "";
+
+  if (errBox) {
+    errBox.textContent = "";
+  }
+
+  // Do not allow mixing both methods at once
+  if (wcOrder && ref) {
+    e.preventDefault();
     if (errBox) {
-      errBox.textContent = messages.missingTrackFields || "Please enter your Paystack reference and billing email.";
+      errBox.textContent = messages.chooseOneTrackingMethod || "Please use either Order ID or Paystack reference, not both.";
     }
     return;
   }
 
-  if (errBox) {
-    errBox.textContent = messages.checkingDetails || "Checking details...";
+  // Path 1: Order ID + Email
+  if (wcOrder) {
+    if (!wcEmail) {
+      e.preventDefault();
+      if (errBox) {
+        errBox.textContent = messages.missingBillingEmail || "Please enter your billing email.";
+      }
+      return;
+    }
+
+    // Normal WooCommerce submit
+    return;
   }
 
-  const fd = new FormData();
-  fd.append("action", "baby_track_by_paystack");
-  fd.append("reference", ref);
-  fd.append("email", email);
-  fd.append("nonce", babyVpFrontend.trackNonce || "");
+  // Path 2: Paystack Reference + Email
+  if (ref) {
+    e.preventDefault();
 
-  fetch(babyVpFrontend.ajaxUrl, {
-    method: "POST",
-    body: fd,
-    credentials: "same-origin"
-  })
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
-      if (data && data.success && data.data && data.data.orderid && data.data.email) {
-        const wcForm = document.querySelector("form.woocommerce-form-track-order");
-        if (!wcForm) {
-          if (errBox) errBox.textContent = messages.trackingFormNotFound || "Tracking form not found on page.";
-          return;
-        }
-
-        const orderField = wcForm.querySelector("#orderid");
-        const emailField = wcForm.querySelector("#order_email");
-
-        if (!orderField || !emailField) {
-          if (errBox) errBox.textContent = messages.trackingInputsNotFound || "Tracking inputs not found.";
-          return;
-        }
-
-        orderField.value = data.data.orderid;
-        emailField.value = data.data.email;
-        wcForm.dataset.babyPsAutoSubmit = "1";
-        wcForm.submit();
-        return;
-      }
-
+    if (!psEmail) {
       if (errBox) {
-        errBox.textContent = (data && data.data && data.data.message)
-          ? data.data.message
-          : (messages.noMatchingOrder || "No matching order found.");
+        errBox.textContent = messages.missingBillingEmail || "Please enter your billing email.";
       }
+      return;
+    }
+
+    if (errBox) {
+      errBox.textContent = messages.checkingDetails || "Checking details...";
+    }
+
+    const fd = new FormData();
+    fd.append("action", "baby_track_by_paystack");
+    fd.append("reference", ref);
+    fd.append("email", psEmail);
+    fd.append("nonce", babyVpFrontend.trackNonce || "");
+
+    fetch(babyVpFrontend.ajaxUrl, {
+      method: "POST",
+      body: fd,
+      credentials: "same-origin"
     })
-    .catch(function () {
-      if (errBox) {
-        errBox.textContent = messages.trackNetworkError || "Network error. Please try again.";
-      }
-    });
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data && data.success && data.data && data.data.orderid && data.data.email) {
+          if (!wcOrderInput || !wcEmailInput) {
+            if (errBox) {
+              errBox.textContent = messages.trackingInputsNotFound || "Tracking inputs not found.";
+            }
+            return;
+          }
+
+          wcOrderInput.value = data.data.orderid;
+          wcEmailInput.value = data.data.email;
+          form.dataset.babyPsAutoSubmit = "1";
+          form.submit();
+          return;
+        }
+
+        if (errBox) {
+          errBox.textContent = (data && data.data && data.data.message)
+            ? data.data.message
+            : (messages.noMatchingOrder || "No matching order found.");
+        }
+      })
+      .catch(function () {
+        if (errBox) {
+          errBox.textContent = messages.trackNetworkError || "Network error. Please try again.";
+        }
+      });
+
+    return;
+  }
+
+  // If email is entered alone without Order ID or reference
+  if (wcEmail || psEmail) {
+    e.preventDefault();
+    if (errBox) {
+      errBox.textContent = messages.missingOrderOrReference || "Please enter your Order ID or Paystack reference.";
+    }
+    return;
+  }
+
+  // Nothing entered
+  e.preventDefault();
+  if (errBox) {
+    errBox.textContent = messages.missingOrderOrReference || "Please enter your Order ID or Paystack reference.";
+  }
 });
